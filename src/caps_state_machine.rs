@@ -1,63 +1,49 @@
-use evdev_rs::{UInputDevice, ReadFlag, InputEvent};
-use evdev_rs::enums::EventCode;
-use std::collections::{HashSet, HashMap};
+use evdev_rs::{InputEvent};
+use evdev_rs::enums::{EventCode, EV_KEY, int_to_ev_key};
+use std::collections::{HashMap};
 use evdev_rs::enums::EV_KEY::{KEY_U, KEY_I, KEY_O, KEY_J, KEY_K, KEY_L, KEY_N, KEY_M, KEY_HOME, KEY_UP, KEY_END, KEY_LEFT, KEY_DOWN, KEY_RIGHT, KEY_BACKSPACE, KEY_DELETE, KEY_CAPSLOCK};
 
-enum CapsState{
-    down,
-    up,
-    repeat
-}
-pub struct CapsStatMachine{
+pub struct CapsStateMachine {
     caps_down:bool,
-    shift_down:bool,
-    accept_keys: HashSet<EventCode>,
-    map_key:HashMap<(bool,EventCode),EventCode>
+    map_key:HashMap<(bool,EV_KEY),EV_KEY>
 }
 
-/*
-             u_down|u_repeat
-caps_down |      home   |
-
-
-
-
- */
-impl CapsStatMachine{
-    fn new()->CapsStatMachine{
-        let accept_keys=[KEY_U,KEY_I,KEY_O,KEY_J,KEY_K,KEY_L,KEY_N,KEY_M].iter().clone().collect();
-        let map_key:HashMap<(bool,EventCode),EventCode>=[
-            ((true,KEY_U.into()),KEY_HOME.into()),
-            ((true,KEY_I.into()),KEY_UP.into()),
-            ((true,KEY_O.into()),KEY_END.into()),
-            ((true,KEY_J.into()),KEY_LEFT.into()),
-            ((true,KEY_K.into()),KEY_DOWN.into()),
-            ((true,KEY_L.into()),KEY_RIGHT.into()),
-            ((true,KEY_N.into()),KEY_BACKSPACE.into()),
-            ((true,KEY_M.into()),KEY_DELETE.into()),
-        ].iter().clone().collect();
-        CapsStatMachine{
+impl CapsStateMachine {
+    pub fn new()-> CapsStateMachine {
+        let mut map_key:HashMap<(bool,EV_KEY),EV_KEY>=HashMap::new();
+        map_key.insert((true,KEY_U),KEY_HOME);
+        map_key.insert((true,KEY_I),KEY_UP);
+        map_key.insert((true,KEY_O),KEY_END);
+        map_key.insert((true,KEY_J),KEY_LEFT);
+        map_key.insert((true,KEY_K),KEY_DOWN);
+        map_key.insert((true,KEY_L),KEY_RIGHT);
+        map_key.insert((true,KEY_N),KEY_BACKSPACE);
+        map_key.insert((true,KEY_M),KEY_DELETE);
+        CapsStateMachine {
             caps_down:false,
-            shift_down:false,
-            accept_keys,
             map_key
         }
     }
 
-    fn transform(mut self,input:InputEvent) -> Option<InputEvent>{
-        if input.event_code==KEY_CAPSLOCK {
-            self.caps_down=!self.caps_down;
-            return input;
+    pub fn transform(&mut self,input:InputEvent) -> Option<InputEvent>{
+        if input.event_code==EventCode::EV_KEY(KEY_CAPSLOCK) {
+            self.caps_down=match input.value{
+                0 => false,
+                1 => true,
+                2 => true,
+                _ => false
+            };
+            return None;
         }
-
-        let output=match self.map_key.get(&(self.caps_down,input.event_code.clone())){
-            Some(output) => {
+        let (_key_type,key_value)=evdev_rs::util::event_code_to_int(&input.event_code);
+        let key_value=int_to_ev_key(key_value).unwrap();
+        match self.map_key.get(&(self.caps_down,key_value)){
+            Some(output_key) => {
                 let mut output_event=input.clone();
-                output_event.event_code=output.clone();
-                output_event
-            },
-            None => input.clone()
-        };
-        Some(output)
+                output_event.event_code=EventCode::EV_KEY(output_key.clone());
+                Some(output_event)
+            }
+            None => Some(input.clone())
+        }
     }
 }

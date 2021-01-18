@@ -1,0 +1,12 @@
+[package]
+name = "caps-map-rs"
+version = "0.1.0"
+authors = ["lj94093"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+udev = "0.5.1"
+evdev-rs = "0.4.0"
+libc = "0.2.82"
