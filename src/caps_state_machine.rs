@@ -28,9 +28,9 @@ impl CapsStateMachine {
     pub fn transform(&mut self,input:InputEvent) -> Option<InputEvent>{
         if input.event_code==EventCode::EV_KEY(KEY_CAPSLOCK) {
             self.caps_down=match input.value{
-                0 => false,
-                1 => true,
-                2 => true,
+                0 => false,//release key
+                1 => true,//press key down
+                2 => true,//repeat
                 _ => false
             };
             return None;

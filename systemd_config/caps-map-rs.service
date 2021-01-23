@@ -1,0 +1,11 @@
+[Unit]
+Description=caps-maps-rs daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/caps-map-rs
+
+[Install]
+WantedBy=multi-user.target
+
+

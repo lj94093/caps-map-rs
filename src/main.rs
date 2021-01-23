@@ -2,7 +2,7 @@ mod caps_state_machine;
 extern crate udev;
 extern crate evdev_rs;
 extern crate libc;
-use evdev_rs::enums::EV_KEY::{KEY_CAPSLOCK, KEY_LEFTSHIFT, KEY_RIGHTSHIFT, KEY_U, KEY_I, KEY_O, KEY_J, KEY_K, KEY_L, KEY_N, KEY_M};
+use evdev_rs::enums::EV_KEY::{KEY_CAPSLOCK};
 use evdev_rs::GrabMode::Grab;
 use evdev_rs::{UInputDevice, ReadFlag, ReadStatus};
 use std::path::Path;
@@ -30,10 +30,17 @@ fn event_loop(keyboard_path :Box<Path>){
     };
     device.grab(Grab).expect("grab the device failed");
     device.enable(&EventType::EV_KEY).expect("enable the EV_KEY failed");
-    let accept_keys=[KEY_CAPSLOCK,KEY_LEFTSHIFT,KEY_RIGHTSHIFT,KEY_U,KEY_I,KEY_O,KEY_J,KEY_K,KEY_L,KEY_N,KEY_M];
-    for key in accept_keys.iter(){
-        device.enable(&EventCode::EV_KEY(key.clone())).expect(format!("enable the key:{:?} failed",key).as_str());
+    println!("{:?}",device.name());
+    match device.name(){
+        Some(device_name) => {
+            if device_name.contains("Logitech") && device_name.contains("M"){
+                println!("filter the Logitech Mouse:{:?}",keyboard_path);
+                return;
+            }
+        }
+        None => {}
     }
+
     let uinput_device=UInputDevice::create_from_device(&device).expect("create UInputDevice failed");
     let mut csm=caps_state_machine::CapsStateMachine::new();
     loop{
